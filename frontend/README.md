@@ -1,11 +1,31 @@
 # Frontend
 
-Frontend scaffold for the debate application.
+React frontend for the debate application.
 
-Planned stack:
+Stack:
 
 - React
 - npm
 
-No frontend application code has been created yet. Add React source, tests, configuration, and dependency files during the implementation stage after planning, test design, and solution design are complete.
+## Local Setup
 
+```powershell
+cd frontend
+npm install
+Copy-Item .env.example .env
+npm run dev
+```
+
+Open the Vite URL shown in the console, usually:
+
+```text
+http://localhost:5173
+```
+
+The frontend expects the backend API at:
+
+```text
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Start the backend separately before clicking `Start Debate`.

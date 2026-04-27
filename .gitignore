@@ -158,6 +158,10 @@ env.bak/
 venv.bak/
 .uv-cache/
 
+# Node
+node_modules/
+dist/
+
 # Spyder project settings
 .spyderproject
 .spyproject
