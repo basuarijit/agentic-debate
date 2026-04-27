@@ -67,9 +67,15 @@ class OpenAIDebateLlmClient(DebateLlmClient):
     def __init__(self, settings: Settings) -> None:
         from langchain_openai import ChatOpenAI
 
+        if not settings.openai_api_key:
+            raise ValueError(
+                "OPENAI_API_KEY must be configured when DEBATE_LLM_PROVIDER=openai."
+            )
+
         self._chat = ChatOpenAI(
             model=settings.openai_model,
             temperature=settings.openai_temperature,
+            api_key=settings.openai_api_key,
         )
 
     async def select_topic(self) -> str:
@@ -145,4 +151,3 @@ def build_llm_client(settings: Settings) -> DebateLlmClient:
     if provider == "mock":
         return MockDebateLlmClient()
     raise ValueError("DEBATE_LLM_PROVIDER must be either 'mock' or 'openai'.")
-

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     debate_llm_provider: str = "mock"
+    openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
     openai_temperature: float = 0.4
 
@@ -23,4 +24,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

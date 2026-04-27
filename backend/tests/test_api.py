@@ -1,9 +1,16 @@
+import os
+
+os.environ["DEBATE_LLM_PROVIDER"] = "mock"
+os.environ.pop("OPENAI_API_KEY", None)
+
 from fastapi.testclient import TestClient
 
+from app.core.config import get_settings
 from app.dependencies import repository
 from app.main import app
 
 
+get_settings.cache_clear()
 client = TestClient(app)
 
 
@@ -74,4 +81,3 @@ def test_debate_not_found() -> None:
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "DEBATE_NOT_FOUND"
-
