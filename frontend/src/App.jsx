@@ -28,6 +28,7 @@ function App() {
 
   const isRunning =
     Boolean(debate) && !terminalStatuses.has(debate.status) && !isStarting;
+  const isJudging = debate?.status === "judging";
 
   useEffect(() => {
     return () => {
@@ -69,7 +70,7 @@ function App() {
             window.clearInterval(pollTimerRef.current);
             pollTimerRef.current = null;
           });
-        }, 1200);
+        }, 700);
       }
     } catch (err) {
       setError(err.message);
@@ -120,6 +121,7 @@ function App() {
           role="pro"
           turns={turnsBySide.pro}
           accent="green"
+          isRunning={isRunning}
         />
         <PartyColumn
           title="Party B"
@@ -127,6 +129,7 @@ function App() {
           role="con"
           turns={turnsBySide.con}
           accent="red"
+          isRunning={isRunning}
         />
       </section>
 
@@ -139,15 +142,17 @@ function App() {
           </div>
         </div>
         <p className="judge-summary">
-          {debate?.result?.judge_summary ??
-            "The judge's result will appear after both parties complete three turns."}
+          {isJudging
+            ? "The judge agent is evaluating both parties and preparing the result."
+            : debate?.result?.judge_summary ??
+              "The judge's result will appear after both parties complete three turns."}
         </p>
       </section>
     </main>
   );
 }
 
-function PartyColumn({ title, subtitle, role, turns, accent }) {
+function PartyColumn({ title, subtitle, role, turns, accent, isRunning }) {
   return (
     <article className={`party-column ${accent}`}>
       <div className="party-header">
@@ -162,19 +167,31 @@ function PartyColumn({ title, subtitle, role, turns, accent }) {
       <div className="turn-list">
         {turns.length === 0 ? (
           <div className="empty-turns">
-            <MessageSquareQuote size={20} />
+            {isRunning ? (
+              <LoaderCircle className="spin" size={20} />
+            ) : (
+              <MessageSquareQuote size={20} />
+            )}
             <span>Waiting for this party&apos;s opening argument.</span>
           </div>
         ) : (
-          turns.map((turn) => (
-            <section className="turn-card" key={turn.turn_number}>
-              <div className="turn-meta">
-                <span>Turn {turn.turn_number}</span>
-                <span>{new Date(turn.created_at).toLocaleTimeString()}</span>
+          <>
+            {turns.map((turn) => (
+              <section className="turn-card" key={turn.turn_number}>
+                <div className="turn-meta">
+                  <span>Turn {turn.turn_number}</span>
+                  <span>{new Date(turn.created_at).toLocaleTimeString()}</span>
+                </div>
+                <p>{turn.content}</p>
+              </section>
+            ))}
+            {isRunning && turns.length < 3 ? (
+              <div className="processing-turn">
+                <LoaderCircle className="spin" size={18} />
+                <span>Next argument is being prepared.</span>
               </div>
-              <p>{turn.content}</p>
-            </section>
-          ))
+            ) : null}
+          </>
         )}
       </div>
     </article>
@@ -195,4 +212,3 @@ function resultTitle(debate) {
 }
 
 export default App;
-

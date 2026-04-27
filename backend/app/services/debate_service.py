@@ -43,35 +43,53 @@ class DebateService:
         try:
             llm_client = build_llm_client(self._settings)
             graph = DebateGraph(llm_client)
-            final_state = await graph.run()
+            persisted_turn_count = 0
+            pro_turn_count = 0
+            con_turn_count = 0
+            result_set = False
 
-            topic = final_state["topic"]
-            starting_side = final_state["starting_side"]
-            winner = final_state["winner"]
-            judge_summary = final_state["judge_summary"]
-            if not topic or not starting_side or not winner or not judge_summary:
-                raise ValueError("Debate graph completed without required final state.")
+            async for node_name, node_update in graph.stream():
+                if node_name == "select_topic":
+                    topic = node_update.get("topic")
+                    starting_side = node_update.get("starting_side")
+                    if not topic or not starting_side:
+                        raise ValueError("Topic selector did not return a valid topic.")
+                    self._repository.set_topic_and_starting_side(
+                        debate_id=debate_id,
+                        topic=topic,
+                        starting_side=starting_side,
+                    )
+                    self._repository.update_status(debate_id, DebateStatus.IN_PROGRESS)
 
-            self._repository.set_topic_and_starting_side(
-                debate_id=debate_id,
-                topic=topic,
-                starting_side=starting_side,
-            )
-            self._repository.update_status(debate_id, DebateStatus.IN_PROGRESS)
+                if node_name in {"pro_turn", "con_turn"}:
+                    turns = node_update.get("turns", [])
+                    for turn in turns[persisted_turn_count:]:
+                        self._repository.append_turn(
+                            debate_id=debate_id,
+                            agent_role=turn["agent_role"],
+                            content=turn["content"],
+                        )
+                    persisted_turn_count = len(turns)
 
-            for turn in final_state["turns"]:
-                self._repository.append_turn(
-                    debate_id=debate_id,
-                    agent_role=turn["agent_role"],
-                    content=turn["content"],
-                )
+                    pro_turn_count = node_update.get("pro_turn_count", pro_turn_count)
+                    con_turn_count = node_update.get("con_turn_count", con_turn_count)
+                    if pro_turn_count >= 3 and con_turn_count >= 3:
+                        self._repository.update_status(debate_id, DebateStatus.JUDGING)
 
-            self._repository.update_status(debate_id, DebateStatus.JUDGING)
-            self._repository.set_result(
-                debate_id=debate_id,
-                winner=winner,
-                judge_summary=judge_summary,
-            )
+                if node_name == "judge":
+                    winner = node_update.get("winner")
+                    judge_summary = node_update.get("judge_summary")
+                    if not winner or not judge_summary:
+                        raise ValueError("Judge agent did not return a valid result.")
+                    self._repository.set_result(
+                        debate_id=debate_id,
+                        winner=winner,
+                        judge_summary=judge_summary,
+                    )
+                    result_set = True
+
+            if not result_set:
+                raise ValueError("Debate graph completed without a judge result.")
         except Exception as exc:
             self._repository.set_failed(
                 debate_id=debate_id,
@@ -157,4 +175,3 @@ class DebateService:
             judge_summary=result.judge_summary,
             created_at=result.created_at,
         )
-

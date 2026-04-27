@@ -83,8 +83,10 @@ class OpenAIDebateLlmClient(DebateLlmClient):
             [
                 SystemMessage(
                     content=(
-                        "You are a debate-topic-selector agent. Select exactly one "
-                        "clear, balanced topic for a short structured debate."
+                        "You are a debate-topic-selector agent. Select randomly exactly one clear, "
+                        "balanced topic for a short structured debate. The topic can be about anything, "
+                        "but avoid overly broad or niche subjects. The topic should be phrased as a statement "
+                        "that can be argued for or against."
                     )
                 ),
                 HumanMessage(content="Return only the debate topic. Do not add commentary."),

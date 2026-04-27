@@ -1,4 +1,5 @@
 import random
+from collections.abc import AsyncIterator
 from typing import TypedDict
 
 from langgraph.graph import END, StateGraph
@@ -35,6 +36,21 @@ class DebateGraph:
             "judge_summary": None,
         }
         return await self._graph.ainvoke(initial_state)
+
+    async def stream(self) -> AsyncIterator[tuple[str, dict]]:
+        initial_state: DebateGraphState = {
+            "topic": None,
+            "starting_side": None,
+            "current_side": None,
+            "pro_turn_count": 0,
+            "con_turn_count": 0,
+            "turns": [],
+            "winner": None,
+            "judge_summary": None,
+        }
+        async for event in self._graph.astream(initial_state, stream_mode="updates"):
+            for node_name, node_update in event.items():
+                yield node_name, node_update
 
     def _build_graph(self):
         graph = StateGraph(DebateGraphState)
@@ -133,4 +149,3 @@ class DebateGraph:
         if state["pro_turn_count"] < 3:
             return "pro"
         return "con"
-
