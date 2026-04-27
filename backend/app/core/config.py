@@ -7,7 +7,12 @@ class Settings(BaseSettings):
     app_name: str = "Agentic Debate API"
     service_name: str = "agentic-debate-api"
     api_v1_prefix: str = "/api/v1"
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list[str] = [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+    ]
 
     debate_llm_provider: str = "mock"
     openai_api_key: str | None = None
