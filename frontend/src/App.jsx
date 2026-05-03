@@ -1,8 +1,17 @@
-import { Gavel, LoaderCircle, MessageSquareQuote, Play, RotateCcw } from "lucide-react";
+import {
+  Gavel,
+  LoaderCircle,
+  MessageSquareQuote,
+  Moon,
+  Play,
+  RotateCcw,
+  Sun,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getDebate, startDebate } from "./api/debates.js";
 
 const terminalStatuses = new Set(["completed", "failed"]);
+const themeStorageKey = "agentic-debate-theme";
 
 function splitTurns(turns) {
   return {
@@ -19,6 +28,10 @@ function App() {
   const [debate, setDebate] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState("");
+  const [theme, setTheme] = useState(() => {
+    const storedTheme = window.localStorage.getItem(themeStorageKey);
+    return storedTheme === "light" ? "light" : "dark";
+  });
   const pollTimerRef = useRef(null);
 
   const turnsBySide = useMemo(
@@ -29,6 +42,12 @@ function App() {
   const isRunning =
     Boolean(debate) && !terminalStatuses.has(debate.status) && !isStarting;
   const isJudging = debate?.status === "judging";
+  const isLightTheme = theme === "light";
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(themeStorageKey, theme);
+  }, [theme]);
 
   useEffect(() => {
     return () => {
@@ -79,6 +98,10 @@ function App() {
     }
   }
 
+  function handleThemeToggle() {
+    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
+  }
+
   return (
     <main className="app-shell">
       <section className="top-bar">
@@ -86,22 +109,40 @@ function App() {
           <p className="eyebrow">Agentic Debate</p>
           <h1>AI Agent Debate Arena</h1>
         </div>
-        <button
-          className="start-button"
-          type="button"
-          onClick={handleStartDebate}
-          disabled={isStarting || isRunning}
-          title="Start Debate"
-        >
-          {isStarting || isRunning ? (
-            <LoaderCircle className="spin" size={20} />
-          ) : debate ? (
-            <RotateCcw size={20} />
-          ) : (
-            <Play size={20} />
-          )}
-          <span>{debate ? "Start New Debate" : "Start Debate"}</span>
-        </button>
+        <div className="top-actions">
+          <label className="theme-switch">
+            <input
+              type="checkbox"
+              checked={isLightTheme}
+              onChange={handleThemeToggle}
+              aria-label="Use light theme"
+            />
+            <span className="switch-track">
+              <span className="switch-thumb">
+                {isLightTheme ? <Sun size={15} /> : <Moon size={15} />}
+              </span>
+            </span>
+            <span className="theme-switch-label">
+              {isLightTheme ? "Light" : "Dark"}
+            </span>
+          </label>
+          <button
+            className="start-button"
+            type="button"
+            onClick={handleStartDebate}
+            disabled={isStarting || isRunning}
+            title="Start Debate"
+          >
+            {isStarting || isRunning ? (
+              <LoaderCircle className="spin" size={20} />
+            ) : debate ? (
+              <RotateCcw size={20} />
+            ) : (
+              <Play size={20} />
+            )}
+            <span>{debate ? "Start New Debate" : "Start Debate"}</span>
+          </button>
+        </div>
       </section>
 
       {error ? <div className="error-banner">{error}</div> : null}
